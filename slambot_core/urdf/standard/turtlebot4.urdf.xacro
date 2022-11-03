@@ -1,0 +1,129 @@
+<?xml version="1.0" ?>
+<robot name="turtlebot4" xmlns:xacro="http://ros.org/wiki/xacro">
+  <!-- Base create3 model -->
+  <xacro:include filename="$(find slambot_core)/urdf/sensors/common.urdf.xacro" />
+  <xacro:include filename="$(find slambot_core)/urdf/sensors/rplidar.urdf.xacro" />
+
+  <!-- Mechanical properties -->
+  <xacro:property name="shell_z_offset"                value="${3*cm2m}" />
+  <xacro:property name="shell_radius"                  value="${12*cm2m}" />
+  <xacro:property name="shell_length"                  value="${20*cm2m}" />
+  <xacro:property name="shell_mass"                    value="0.390" />
+
+  <xacro:property name="rplidar_x_offset"              value="${-4*cm2m}"/>
+  <xacro:property name="rplidar_y_offset"              value="${0*cm2m}"/>
+  <xacro:property name="rplidar_z_offset"              value="${9.8715*cm2m}"/>
+    <!-- Gazebo version -->
+  <xacro:arg name="gazebo"                       default="classic" />
+
+  <!-- Mechanical properties -->
+  <xacro:property name="body_z_offset"           value="${-2.5*cm2m}" />
+  <xacro:property name="body_collision_z_offset" value="${1*cm2m}" />
+  <xacro:property name="body_mass"               value="2.300" />
+  <xacro:property name="body_radius"             value="${16.4*cm2m}" />
+  <xacro:property name="body_length"             value="${6*cm2m}" />
+
+  <xacro:if value="${'$(arg gazebo)' == 'ignition'}">
+    <xacro:property name="body_cog_x_offset"       value="${2.28*cm2m}" />
+  </xacro:if>
+  <xacro:if value="${'$(arg gazebo)' == 'classic'}">
+    <xacro:property name="body_cog_x_offset"       value="${0*cm2m}" />
+  </xacro:if>
+
+  <xacro:property name="bumper_mass"             value="0.1" />
+  <xacro:property name="bumper_offset_z"         value="${-2.5*cm2m}" />
+  <xacro:property name="bumper_inertial_x"       value="${8*cm2m}" />
+  <xacro:property name="bumper_inertial_z"       value="${2*cm2m}"/>
+
+  <xacro:property name="wheel_height"            value="${-2.75*cm2m}" />
+  <xacro:property name="distance_between_wheels" value="${23.3*cm2m}" />
+
+  <xacro:property name="caster_position_x"       value="${12.5*cm2m}" />
+  <xacro:if value="${'$(arg gazebo)' == 'ignition'}">
+    <xacro:property name="caster_position_z"       value="${-5.03*cm2m}" />
+  </xacro:if>
+  <xacro:if value="${'$(arg gazebo)' == 'classic'}">
+    <xacro:property name="caster_position_z"       value="${-5.2*cm2m}" />
+  </xacro:if>
+  
+  <xacro:property name="wheel_drop_offset_z"     value="${3.5*mm2m}"/>
+  <xacro:property name="wheel_drop_z"            value="${wheel_height + wheel_drop_offset_z}"/>
+
+  <xacro:property name="base_link_z_offset"     value="${6.42*cm2m}"/>
+
+  <joint name="shell_link_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="shell_link"/>
+    <origin xyz="0 0 ${shell_z_offset + base_link_z_offset}" rpy="0 0 0"/>
+  </joint>
+  
+  <joint name="dummy_joint" type="fixed">
+     <parent link="odom"/>
+     <child link="base_link"/>
+   </joint>
+  
+  <link name="odom">
+   </link>
+  
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 ${body_z_offset + base_link_z_offset}" rpy="0 0 ${pi/2}"/>
+      <geometry>
+        <mesh filename="$(find slambot_core)/meshes/body_visual.dae" />
+      </geometry>
+    </visual>
+    <collision name="create3_base_collision">
+      <origin xyz="0 0 ${body_z_offset + body_collision_z_offset  + base_link_z_offset}" rpy="0 0 ${pi/2}"/>
+      <geometry>
+        <cylinder length="${body_length}" radius="${body_radius}"/>
+      </geometry>
+    </collision>
+    <xacro:inertial_cylinder_with_pose mass="${body_mass}" radius="${body_radius}" length="${body_length}">
+      <origin xyz="${body_cog_x_offset} 0 ${body_collision_z_offset + base_link_z_offset}"/>
+    </xacro:inertial_cylinder_with_pose>
+  </link>
+  
+
+  <xacro:if value="${'$(arg gazebo)' == 'ignition'}">
+    <gazebo reference="base_link">
+      <xacro:material_darkgray/>
+    </gazebo>
+  </xacro:if>
+
+  <!-- Turtlebot4 shell definition -->
+  <link name="shell_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 ${pi/2}"/>
+      <geometry>
+        <mesh filename="package://slambot_core/meshes/shell.dae" scale="1 1 1" />
+      </geometry>
+    </visual>
+    <collision name="shell_collision">
+      <geometry>
+        <mesh filename="package://slambot_core/meshes/shell_collision.dae" scale="1 1 1" />
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="${shell_mass}"/>
+      <inertia ixx="0.00281295367" ixy="-0.00000137675" ixz="-0.00005790057"
+	             iyy="0.00164666421" iyz="0.00000564466" izz="0.00424540124" />
+    </inertial>
+  </link>
+
+  <gazebo reference="shell_link">
+    <xacro:material_black/>
+  </gazebo>
+
+  <!--xacro:weight_block name="front_left_bottom_weight_block">
+    <origin xyz="${weight_x_offset} ${weight_y_offset} ${bottom_weight_z_offset}"/>
+  </xacro:weight_block-->
+
+  <!-- Turtlebot4 sensor definitions -->
+
+  <xacro:rplidar name="rplidar" parent_link="shell_link" gazebo="$(arg gazebo)">
+    <origin xyz="${rplidar_x_offset} ${rplidar_y_offset} ${rplidar_z_offset}"
+            rpy="0 0 ${pi/2}"/>
+  </xacro:rplidar>
+
+</robot>
+
