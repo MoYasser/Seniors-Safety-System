@@ -4,7 +4,7 @@ project(slambot_core)
 find_package(ament_cmake REQUIRED)
 find_package(robot_state_publisher REQUIRED)
 
-install(DIRECTORY config meshes worlds launch rviz urdf
+install(DIRECTORY config meshes launch rviz urdf
   DESTINATION share/${PROJECT_NAME}/
  )
  
